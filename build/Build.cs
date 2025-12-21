@@ -1,0 +1,87 @@
+using System;
+using System.Linq;
+using Nuke.Common;
+using Nuke.Common.CI;
+using Nuke.Common.Execution;
+using Nuke.Common.IO;
+using Nuke.Common.ProjectModel;
+using Nuke.Common.Tooling;
+using Nuke.Common.Tools.DotNet;
+using Nuke.Common.Utilities.Collections;
+using static Nuke.Common.EnvironmentInfo;
+//using static Nuke.Common.IO.FileSystemTasks;
+using static Nuke.Common.IO.PathConstruction;
+using static Nuke.Common.Tools.DotNet.DotNetTasks;
+class Build : NukeBuild
+{
+    /// Support plugins are available for:
+    ///   - JetBrains ReSharper        https://nuke.build/resharper
+    ///   - JetBrains Rider            https://nuke.build/rider
+    ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
+    ///   - Microsoft VSCode           https://nuke.build/vscode
+
+    public static int Main () => Execute<Build>(x => x.Compile);
+
+    [Solution] readonly Solution Solution;
+
+    [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
+    readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
+
+    [Parameter("Nuget API Key"), Secret]
+    readonly string ApiKey;
+
+    [Parameter("Nuget Source")]
+    readonly string Source = "https://api.nuget.org/v3/index.json";
+
+    AbsolutePath outPutDirectory => RootDirectory / "output";
+
+    Target Clean => _ => _
+        .Before(Restore)
+        .Executes(() =>
+        {
+            DotNetClean(_ => _
+                .SetConfiguration(Configuration));
+        });
+
+    Target Restore => _ => _
+        .Executes(() =>
+        {
+            DotNetRestore();
+        });
+
+    Target Compile => _ => _
+        .DependsOn(Restore)
+        .Executes(() =>
+        {
+            DotNetBuild(_ => _
+                           .SetConfiguration(Configuration)
+                                          .EnableNoRestore());
+        });
+
+    Target Pack => _ => _
+        .DependsOn(Compile)
+        .Executes(() =>
+        {
+            DotNetPack(_ => _
+                    .SetProject(Solution)
+                    .SetConfiguration(Configuration)
+                    .SetOutputDirectory(outPutDirectory)
+                    .EnableNoBuild());
+        });
+
+    Target Push => _ => _
+        .DependsOn(Pack)
+        .Requires(() => ApiKey)
+        .Executes(() =>
+        {
+            var packages = outPutDirectory.GlobFiles("*.nupkg");
+
+            DotNetNuGetPush(_ => _
+                .SetSource(Source)
+                .SetApiKey(ApiKey)
+                .CombineWith(packages, (_, v) => _
+                .SetTargetPath(v)));
+            
+        });
+
+}
