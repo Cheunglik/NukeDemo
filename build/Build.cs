@@ -41,6 +41,7 @@ class Build : NukeBuild
         {
             DotNetClean(_ => _
                 .SetConfiguration(Configuration));
+            outPutDirectory.CreateOrCleanDirectory();
         });
 
     Target Restore => _ => _
@@ -59,7 +60,7 @@ class Build : NukeBuild
         });
 
     Target Test => _ => _
-        .DependsOn(Compile)
+        .DependsOn(Clean,Compile)
         .Executes(() =>
         {
             DotNetTest(s=> s

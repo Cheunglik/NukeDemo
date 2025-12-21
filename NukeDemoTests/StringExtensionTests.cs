@@ -19,5 +19,14 @@ namespace NukeDemo.Tests
             //Xunit.Assert.Fail("This test needs an implementation");
             Assert.Equal(result, test.HasChinese());
         }
+
+        [Fact()]
+        public void ParseToDoubleTest()
+        {
+            var test = "1/2";
+            var result = 0.5;
+            Assert.Equal(result, test.ParseToDouble());
+            //Xunit.Assert.Fail("This test needs an implementation");
+        }
     }
 }
