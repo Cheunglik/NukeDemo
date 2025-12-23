@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Nuke.Common;
 using Nuke.Common.CI;
+using Nuke.Common.CI.GitHubActions;
 using Nuke.Common.Execution;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
@@ -12,6 +13,10 @@ using static Nuke.Common.EnvironmentInfo;
 //using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
+[GitHubActions("continuous",
+    GitHubActionsImage.UbuntuLatest,
+    OnPushBranches = new[] {"main"},
+    InvokedTargets = new[] {nameof(Compile), nameof(Test) })]
 class Build : NukeBuild
 {
     /// Support plugins are available for:
